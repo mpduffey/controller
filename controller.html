@@ -1,0 +1,18 @@
+<ng-tag-it [autocompleteSource]="auto.source" [add-tag]="addTag" (tagAdded)="addMenuItem($event)" [initial-tags]="tags" tag-label-field="label" style="margin-bottom: 5px;"></ng-tag-it>
+<div class="row" *ngIf="!compact" style="margin-bottom: 5px; font-size: 11px;">
+	<div class="col-md-2"><button class="btn btn-xs btn-primary" (click)="refreshObjects()">Refresh</button></div>
+	<div class="col-md-2 list-dash">Total: {{objects.length}}</div>
+	<div class="col-md-3 list-dash">Incomplete: {{objects.filter(filterFn, {field: "Complete", value: 0}).length}}</div>
+	<div class="col-md-4 list-dash">Complete: {{objects.filter(filterFn, {field: "Complete", value: 1}).length}}</div>
+	<div class="col-md-1"><ng-menu [menu-object]="menu"></ng-menu></div>
+</div>
+<div class="row">
+	<div class="col-md-12">
+		<div class="flex-container-row">
+			<input type="checkbox" class="select-all">
+			<input #inputValue [autocomplete]="auto" class="form-control add-link-input flex-item" placeholder="{{objects.filter(filterFn, {field: 'select', value: true}).length?'Link to Selected Objects':'Add and Link Object'}}">
+		</div>
+		<input *ngIf="!compact" #searchInput class="form-control" placeholder="Search Objects" (keyup)="returnSearch(searchInput)" style="margin-bottom: 5px; line-height: 12px; font-size: 11px; padding: 1px; height: 18px;">
+	</div>
+</div>
+<object-block-list [ngClass]="{'flex-item': !compact}" [searchText]="searchText" class="flex-container-column" [tree]="compact" [objects]="objects"></object-block-list>
