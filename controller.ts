@@ -1,10 +1,11 @@
-import {Component, Input, ChangeDetectionStrategy, ChangeDetectorRef, AfterViewInit} from '@angular/core';
+import {Component, Input, AfterViewInit, ChangeDetectorRef} from '@angular/core';
 import {ObjectBlockList} from 'components/object-block-list/object-block-list';
 import {NgTagIt} from 'components/ng-tag-it/ng-tag-it';
 import {Autocomplete} from 'components/autocomplete/autocomplete';
-import {ObjectService} from 'services/objects.service';
+import {ObjectService} from 'services/object-service/objects.service';
 import {Slimscroll} from 'components/slimscroll/slimscroll';
 import {Menu} from 'components/menu/menu';
+import {ClassEditor} from 'components/class-editor/class-editor';
 
 @Component({
 	selector:					'controller',
@@ -69,19 +70,28 @@ export class Controller implements AfterViewInit {
 			});
 		},
 		select:				(event, ui) => {
-			var tagIds = Array.from(this.tags, x => x.value),
-					linked_object = {
+			var linked_object = {
 						name:					ui.item.label.substring(5,ui.item.label.length-1),
 						value:				ui.item.value,
 						class:				null,
 						rank:					null
 					};
 			event.preventDefault();
-			this._objectService.linkObjects(tagIds, linked_object).subscribe(res => {
-				this.objects = res;
-				$(event.target).val(null);
-				this.cd.markForCheck();
-			});
+			if(this.objects.filter(this.filterFn, {field: 'select', value: true}).length > 0) {
+				var selectIds = Array.from(this.objects.filter(this.filterFn, {field: 'select', value: true}), x => x.ObjectID);
+				this._objectService.linkObjects(selectIds, linked_object).subscribe(res => {
+					// send confirmation through notification
+					$(event.target).val(null);
+					this.cd.markForCheck();
+				});
+			} else {
+				var tagIds = Array.from(this.tags, x => x.value);
+				this._objectService.linkObjects(tagIds, linked_object).subscribe(res => {
+					this.objects = res;
+					$(event.target).val(null);
+					this.cd.markForCheck();
+				});
+			}
 		},
 		focus:				(event, ui) => {
 			event.preventDefault();
@@ -115,7 +125,6 @@ export class Controller implements AfterViewInit {
 			var tagIds = Array.from(this.tags, x => x.value);
 			this._objectService.getObjectsWithTags(tagIds).subscribe(objects => {
 				this.objects = objects;
-				this.cd.markForCheck();
 			});
 		} else {
 			this.initializeController();
@@ -126,9 +135,7 @@ export class Controller implements AfterViewInit {
 			this.objects = response.objects;
 			this.initialized = true;
 			this.tags = response.tags.map(el => {return {label: el.ObjectName, value: el.ObjectID};});
-			this.tags.forEach((item,index) => {
-				this.addMenuItem(item);
-			})
+			this.tags.forEach((item,index) => {this.addMenuItem(item);})
 			this.cd.markForCheck();
 		});
 	}

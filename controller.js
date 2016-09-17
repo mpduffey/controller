@@ -12,7 +12,7 @@ var core_1 = require('@angular/core');
 var object_block_list_1 = require('components/object-block-list/object-block-list');
 var ng_tag_it_1 = require('components/ng-tag-it/ng-tag-it');
 var autocomplete_1 = require('components/autocomplete/autocomplete');
-var objects_service_1 = require('services/objects.service');
+var objects_service_1 = require('services/object-service/objects.service');
 var slimscroll_1 = require('components/slimscroll/slimscroll');
 var menu_1 = require('components/menu/menu');
 var Controller = (function () {
@@ -44,18 +44,29 @@ var Controller = (function () {
                 });
             },
             select: function (event, ui) {
-                var tagIds = Array.from(_this.tags, function (x) { return x.value; }), linked_object = {
+                var linked_object = {
                     name: ui.item.label.substring(5, ui.item.label.length - 1),
                     value: ui.item.value,
                     class: null,
                     rank: null
                 };
                 event.preventDefault();
-                _this._objectService.linkObjects(tagIds, linked_object).subscribe(function (res) {
-                    _this.objects = res;
-                    $(event.target).val(null);
-                    _this.cd.markForCheck();
-                });
+                if (_this.objects.filter(_this.filterFn, { field: 'select', value: true }).length > 0) {
+                    var selectIds = Array.from(_this.objects.filter(_this.filterFn, { field: 'select', value: true }), function (x) { return x.ObjectID; });
+                    _this._objectService.linkObjects(selectIds, linked_object).subscribe(function (res) {
+                        // send confirmation through notification
+                        $(event.target).val(null);
+                        _this.cd.markForCheck();
+                    });
+                }
+                else {
+                    var tagIds = Array.from(_this.tags, function (x) { return x.value; });
+                    _this._objectService.linkObjects(tagIds, linked_object).subscribe(function (res) {
+                        _this.objects = res;
+                        $(event.target).val(null);
+                        _this.cd.markForCheck();
+                    });
+                }
             },
             focus: function (event, ui) {
                 event.preventDefault();
@@ -83,7 +94,6 @@ var Controller = (function () {
                 var tagIds = Array.from(_this.tags, function (x) { return x.value; });
                 _this._objectService.getObjectsWithTags(tagIds).subscribe(function (objects) {
                     _this.objects = objects;
-                    _this.cd.markForCheck();
                 });
             }
             else {
@@ -95,9 +105,7 @@ var Controller = (function () {
                 _this.objects = response.objects;
                 _this.initialized = true;
                 _this.tags = response.tags.map(function (el) { return { label: el.ObjectName, value: el.ObjectID }; });
-                _this.tags.forEach(function (item, index) {
-                    _this.addMenuItem(item);
-                });
+                _this.tags.forEach(function (item, index) { _this.addMenuItem(item); });
                 _this.cd.markForCheck();
             });
         };
